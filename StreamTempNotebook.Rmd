@@ -37,6 +37,11 @@ for(s in sites){
 }
 ```
 
+```{r}
+ms02 <- subset(tdl, Site = 'MS02')
+test <- length(is.na(ms02))
+```
+
 
 ## MODELED TEMPERATURES #####
 # Read in predicted (modeled) stream temperatures; these are daily for each reach
