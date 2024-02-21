@@ -4,8 +4,11 @@ library(dplyr)
 library(maps)
 library(sf)
 library(readxl)
+#install.packages("leaflet")
+install.packages("leaflet.markercluster")
 #install.packages("shiny")
 #install.packages("shinythemes")
+library(leaflet)
 library(shiny)
 
 # load shapefile
@@ -30,30 +33,38 @@ ui <- fluidPage(
   titlePanel("Demo R Shiny Dashboard"),
   sidebarLayout(
     sidebarPanel(
-      # no functionality yet...
       selectInput("Site", label="Select Site", choices=unique(site.names$Temp_Alias),
                   selected="ES01")
     ),
     mainPanel(
       # display the map
-      plotOutput("ggplot", height="700px", width='350px')
+      leafletOutput("map", height="800px")
+      #plotOutput("ggplot", height="700px", width='350px')
     )
   )
 )
 
 server <- function(input, output) {
-  # render plot?
-  output$ggplot <- renderPlot({
+  # render plot
+  output$map <- renderLeaflet({
+    leaflet() %>% 
+      addProviderTiles(providers$OpenStreetMap) %>% 
+      setView(lng = -123.5596, lat = 48.07, zoom = 10) %>%
+      # add site markers, show site names when clicked
+      addMarkers(data=site.names, ~LONG, ~LAT, popup=~Temp_Alias)# %>% 
+      #addMarkersCluster()
+  })
+  #output$ggplot <- renderPlot({
     # filter based on selected site
-    filtered <- site.names[site.names$Temp_Alias == input$Site, ]
+   # filtered <- site.names[site.names$Temp_Alias == input$Site, ]
     
     # plot elwha and site points
-    ggplot() +
-      geom_sf(data=elwha_df) +
-      geom_point(data=filtered, aes(x=LONG, y=LAT, color='red', size=3)) +
-      labs(title='Elwha River Sites') +
-      theme(legend.position='none')
-  })
+    #ggplot() +
+     # geom_sf(data=elwha_df) +
+     # geom_point(data=filtered, aes(x=LONG, y=LAT, color='red', size=3)) +
+     # labs(title='Elwha River Sites') +
+     # theme(legend.position='none')
+  #})
    
 }
 
