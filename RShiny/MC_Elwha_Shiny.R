@@ -10,6 +10,7 @@ install.packages("leaflet.markercluster")
 #install.packages("shinythemes")
 library(leaflet)
 library(shiny)
+library(RColorBrewer)
 
 # load shapefile
 elwha_st <- st_read('geo/elwha_streams.shp')
@@ -30,6 +31,17 @@ elwha_map <- ggplot() +
   labs(title="Elwha River")
 
 ui <- fluidPage(
+  tags$head(
+    tags$script(
+      # adjust size of map based on window size
+      '
+      $(window).on("resize", function() {
+        var map = $("#map);
+        map.height($(window).height() - map.offset().top - 20);
+      });
+      '
+    )
+  ),
   titlePanel("Demo R Shiny Dashboard"),
   sidebarLayout(
     sidebarPanel(
@@ -38,20 +50,24 @@ ui <- fluidPage(
     ),
     mainPanel(
       # display the map
-      leafletOutput("map", height="800px")
-      #plotOutput("ggplot", height="700px", width='350px')
+      leafletOutput("map", height="650px"),
+      # point plot
+      plotOutput("ggplot", height="350px", width='600px')
     )
   )
 )
+
+sec_palette <- colorRampPalette(brewer.pal(length(unique(site.names$SECTION)), "Set1"))
 
 server <- function(input, output) {
   # render plot
   output$map <- renderLeaflet({
     leaflet() %>% 
       addProviderTiles(providers$OpenStreetMap) %>% 
-      setView(lng = -123.5596, lat = 48.07, zoom = 10) %>%
+      setView(lng = -123.5596, lat = 48.03, zoom = 10) %>%
       # add site markers, show site names when clicked
-      addMarkers(data=site.names, ~LONG, ~LAT, popup=~Temp_Alias)# %>% 
+      addMarkers(data=site.names, ~LONG, ~LAT, popup=~Temp_Alias,
+                 options=markerOptions(riseOnHover = TRUE))#, color=~colorFactor(SECTION, palette = "Dark2"))# %>% 
       #addMarkersCluster()
   })
   #output$ggplot <- renderPlot({
