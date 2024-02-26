@@ -1,0 +1,33 @@
+---
+title: "Untitled"
+author: "Anna Tsai"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(shiny)
+library(tidyverse)
+library(DT)
+```
+
+```{r}
+df <- read.csv("mergetemp_test.csv")
+```
+
+```{r}
+df <- read.csv("mergetemp_test.csv")
+  
+df2 <- mutate(df, Date = as.Date(Date, format= "%Y-%m-%d"))
+```
+
+```{r}
+selected_sites <- df %>%
+      filter(ward5 %in% c(0,1)) %>%
+      select(Date:Temp)
+```
+
+```{r}
+df %>% filter(ward5 %in% c(0,1))
+```
+

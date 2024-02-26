@@ -5,7 +5,7 @@ library(ggplot2)
 
 # Load data --------------------------------------------------------------------
 
-load("sitedemo.rda")
+load("mergedemo.rda")
 
 # Define UI --------------------------------------------------------------------
 
@@ -19,8 +19,8 @@ ui <- fluidPage(
       # Select variable for y-axis
       selectInput(inputId = "y",
                   label = "Y-axis:",
-                  choices = c("MS36", "MS39"),
-                  selected = "MS36"),
+                  choices = c(0,1,2,3,4),
+                  selected = 0),
       
       # Select variable for x-axis
       selectInput(inputId = "x",
@@ -48,7 +48,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   output$scatterplot <- renderPlot({
-    ggplot(data = sitedemo, aes_string(x = input$x, y = input$y
+    ggplot(data = mergedemo, aes_string(x = input$x, y = input$y
                                      )) +
       geom_point()
   })
