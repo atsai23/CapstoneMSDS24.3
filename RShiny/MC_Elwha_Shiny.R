@@ -25,6 +25,13 @@ elwha_shp <- st_zm(elwha_st)
 # convert to dataframe
 elwha_df <- st_as_sf(elwha_shp)
 
+# load in drainage basin shapefile
+drainage_network <- st_read("geo/WBD_Elwha.shp") %>% 
+  st_transform('+proj=longlat +datum=WGS84')
+
+ggplot() +
+  geom_sf(data=drainage_network)
+
 # plot elwha
 elwha_map <- ggplot() +
   geom_sf(data=elwha_df) +
@@ -66,6 +73,7 @@ server <- function(input, output) {
       addProviderTiles(providers$OpenStreetMap) %>% 
       setView(lng = -123.5596, lat = 48.03, zoom = 10) %>%
       # add site markers, show site names when clicked
+      addPolygons(data=drainage_network, weight=5, col='blue') %>% 
       addMarkers(data=site.names, ~LONG, ~LAT, popup=~Temp_Alias,
                  options=markerOptions(riseOnHover = TRUE))#, color=~colorFactor(SECTION, palette = "Dark2"))# %>% 
       #addMarkersCluster()
