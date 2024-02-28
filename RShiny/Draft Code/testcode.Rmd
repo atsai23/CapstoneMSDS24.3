@@ -31,3 +31,7 @@ selected_sites <- df %>%
 df %>% filter(ward5 %in% c(0,1))
 ```
 
+```{r}
+ggplot(data = df, aes(x = Date, y = Temp)) + geom_point(aes(color = factor(ward5)))
+```
+
