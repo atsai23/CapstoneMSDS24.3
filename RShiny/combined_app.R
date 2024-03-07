@@ -1,5 +1,4 @@
 # Load packages ----------------------------------------------------------------
-
 library(shiny)
 library(tidyverse)
 library(maps)
@@ -8,18 +7,27 @@ library(readxl)
 library(leaflet)
 library(RColorBrewer)
 
-
 # Load data --------------------------------------------------------------------
 
-#temp data
-df <- read.csv("mergetemp_test.csv")
+#Temperature Data
+temp <- read.csv('data/daily-avg-tmp.csv')
+
+#Drop NaNs
+temp <- temp[!(is.na(temp$Temp)),]
 
 #Make sure date column is formated as date
-df <- mutate(df, Date = as.Date(Date, format = "%Y-%m-%d"))
+temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
 
-#Get site names
-site_names <- sort(unique(df$ward5))
+#Get site info
+sites <- read_xlsx('data/Temperature Site Names.xlsx')
+
+#Get info for only sites we have measurements for
+measured_sites <- sites %>% filter(Temp_Alias %in% temp$Site)
+
+#Get list of site names
+site_names <- sort(unique(temp$Site))
 #hard coded- might want to have some flexibility for the name of the label column?
+
 
 # load shapefile
 elwha_st <- st_read('geo/elwha_streams.shp')
@@ -84,13 +92,22 @@ ui <- fluidPage(
     tabPanel("Plot", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
-                 #Site filter dropdown
+                 #Dropdown for site selection
                  selectInput(
                    'site',
                    label = 'Choose a Site',
                    choices = site_names,
-                   selected = site_names[0],
+                   selected = site_names[0:5],
                    multiple = TRUE
+                 ),
+                 sliderInput(
+                   'range',
+                   label = 'River KM',
+                   min = 0,
+                   max = max(measured_sites$RKM),
+                   value = c(0, 25)
+                   
+                   
                  )
                ),
                #Display the plot
@@ -107,16 +124,19 @@ server <- function(input, output) {
   output$scatterplot <- renderPlot({
     #Filter for just the selected sites
     sites_subset <-
-      df %>% filter(ward5 %in% input$site) %>% select(Date:Temp)
+      temp %>% filter(Site %in% input$site) %>%
+      select(Date:Temp)
     
     #Code for plots
     ggplot(data = sites_subset, aes(x = Date, y = Temp)) +
-      geom_point(aes(color = factor(ward5)))
+      geom_point(aes(color = factor(Site))) +
+      labs(color = 'Site')
     #ideally which column has the labels would be from user input
   })
   
   output$map <- renderLeaflet({
     leaflet() %>%
+      #Basemap
       addProviderTiles(providers$OpenStreetMap) %>%
       setView(lng = -123.5596,
               lat = 48.03,

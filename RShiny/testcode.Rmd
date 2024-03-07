@@ -7,6 +7,7 @@ output: html_document
 
 ```{r}
 library(shiny)
+library(readxl)
 library(tidyverse)
 library(DT)
 ```
@@ -36,10 +37,27 @@ ggplot(data = df, aes(x = Date, y = Temp)) + geom_point(aes(color = factor(ward5
 ```
 
 ```{r}
-df <- read.csv('data/daily-avg-tmp.csv')
+sites <- read_xlsx('data/Temperature Site Names.xlsx')
+temp <- read.csv('data/daily-avg-tmp.csv')
 ```
 
 ```{r}
-df2 <- df[!(is.na(df$Temp)), ]
-`````````
+test <- sites %>% filter(between(sites$RKM, 15, 30)) %>% select(Temp_Alias)
+test2 <- test$Temp_Alias
+#temp2 <- temp %>% filter(Site %in% test$Temp_Alias) %>% select(Date:Temp)
+```
+
+```{r}
+temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
+```
+
+```{r}
+a = as.Date('2015-12-01')
+b = as.Date('2016-12-01')
+```
+
+
+```{r}
+temp %>% filter(between(temp$Date, a, b)) %>% select(Date:Temp)
+```
 

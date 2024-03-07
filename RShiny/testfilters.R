@@ -31,23 +31,44 @@ ui <- fluidPage(
   titlePanel("Temperature Time Series by Site"),
   
   sidebarLayout(
+    
     sidebarPanel(
-      #Dropdown for site selection
-      selectInput(
-        inputId = 'site',
-        label = 'Choose a Site',
-        choices = site_names,
-        selected = site_names,
-        multiple = TRUE
-      ),
       
+      #Select River Kilometer
       sliderInput(
         'range',
         label = 'River KM',
         min = 0,
         max = max(measured_sites$RKM),
         value = c(0, 25)
+      ),
+      
+      #Select Date Range
+      sliderInput(
+        'dateRange',
+        label = 'Date Range',
+        min = min(temp$Date),
+        max = max(temp$Date),
+        value = c(min(temp$Date), as.Date('2015-12-01'))
+      ),
+      
+      #Select Section
+      selectInput(
+        'Section',
+        label = 'Section',
+        choices = sites$SECTION,
+        selected = sites$SECTION[1]
+      ),
+
+      #Select a site
+      selectInput(
+        'site',
+        label = 'Choose a Site',
+        choices = site_names,
+        selected = site_names[0:5],
+        multiple = TRUE
       )
+      
     ),
     
     #Display graph
@@ -58,14 +79,23 @@ ui <- fluidPage(
 # Define server ----------------------------------------------------------------
 server <- function(input, output, session) {
   
-  selected_sites <- reactive({
-    measured_sites[input$range[1]:input$range[2], "Temp_Alias"]
+  #Filter by date
+  selected_dates <- reactive({
+    temp %>% filter(between(temp$Date, input$dateRange[1], input$dateRange[2])) %>%
+      select(Date:Temp)
   })
   
+  #Select Sites for RKM
+  selected_sites <- reactive({
+    get_sites <- sites %>% filter(
+      between(sites$RKM, input$range[1], input$range[2])) %>% 
+      select(Temp_Alias)
+    get_sites$Temp_Alias
+  })
   
   #Filter River Kilometer
   selected_data <- reactive({
-    temp %>% filter(Site %in% selected_sites()) %>% select(Date:Temp)
+    selected_dates() %>% filter(Site %in% selected_sites()) %>% select(Date:Temp)
     
   })
   
@@ -76,10 +106,8 @@ server <- function(input, output, session) {
       labs(color = 'Site')
     #ideally which column has the labels would be from user input
   })
-
   
 }
-
 
 # Create a Shiny app object ----------------------------------------------------
 
