@@ -28,14 +28,9 @@ measured_sites <- sites %>% filter(Temp_Alias %in% temp$Site)
 site_names <- sort(unique(temp$Site))
 #hard coded- might want to have some flexibility for the name of the label column?
 
-
 # load shapefile
 elwha_st <- st_read('geo/elwha_streams.shp')
-daily_avg_temps <- read.csv('data/daily-avg-tmp.csv')
-site.names <-
-  read_excel("data/Temperature Site Names.xlsx", "Master")
-
-unique(site.names$Temp_Alias)
+#daily_avg_temps <- read.csv('data/daily-avg-tmp.csv')
 
 # drop Z/M coords
 elwha_shp <- st_zm(elwha_st)
@@ -76,7 +71,7 @@ ui <- fluidPage(
                  selectInput(
                    "Site",
                    label = "Select Site",
-                   choices = unique(site.names$Temp_Alias),
+                   choices = unique(sites$Temp_Alias),
                    selected = "ES01"
                  )
                ),
@@ -116,24 +111,9 @@ ui <- fluidPage(
   )
 )
 
-sec_palette <-
-  colorRampPalette(brewer.pal(length(unique(site.names$SECTION)), "Set1"))
-
 # Define server ----------------------------------------------------------------
 server <- function(input, output) {
-  output$scatterplot <- renderPlot({
-    #Filter for just the selected sites
-    sites_subset <-
-      temp %>% filter(Site %in% input$site) %>%
-      select(Date:Temp)
-    
-    #Code for plots
-    ggplot(data = sites_subset, aes(x = Date, y = Temp)) +
-      geom_point(aes(color = factor(Site))) +
-      labs(color = 'Site')
-    #ideally which column has the labels would be from user input
-  })
-  
+  ## leaflet map
   output$map <- renderLeaflet({
     leaflet() %>%
       #Basemap
@@ -145,13 +125,38 @@ server <- function(input, output) {
       addPolygons(data = drainage_network,
                   weight = 5,
                   col = 'blue') %>%
-      addMarkers(
-        data = site.names,
+      addCircleMarkers(
+        data = sites,
         ~ LONG,
         ~ LAT,
         popup =  ~ Temp_Alias,
         options = markerOptions(riseOnHover = TRUE)
       )
+  })
+  
+  ggplot_data <- reactive({
+    site <- input$map_marker_click$id
+    print(site)
+    
+    merged_data <- merge(sites, temp, by.x = "Temp_Alias", by.y = "Site")
+    
+    filtered <- temp[temp$Site %in% site,]
+    print(filtered)
+  })
+  
+  output$ggplot <- renderPlot({
+    #Code for plots
+    ggplot(data = ggplot_data(), aes(x = Date, y = Temp)) +
+      geom_point(aes(color = factor(Site)))
+    #ideally which column has the labels would be from user input
+  })
+  
+  # line/scatter plot of temps over time
+  output$scatterplot <- renderPlot({
+    #Filter for just the selected sites
+    sites_subset <-
+      temp %>% filter(Site %in% input$site) %>%
+      select(Date:Temp)
   })
   
 }
