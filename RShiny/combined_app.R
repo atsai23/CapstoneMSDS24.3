@@ -13,7 +13,7 @@ library(RColorBrewer)
 temp <- read.csv('data/daily-avg-tmp.csv')
 
 #Drop NaNs
-temp <- temp[!(is.na(temp$Temp)),]
+#temp <- temp[!(is.na(temp$Temp)),]
 
 #Make sure date column is formated as date
 temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
@@ -135,19 +135,22 @@ server <- function(input, output) {
   })
   
   ggplot_data <- reactive({
-    site <- input$map_marker_click$id
-    print(site)
+    #site <- input$map_marker_click
+    #print(site)
     
-    merged_data <- merge(sites, temp, by.x = "Temp_Alias", by.y = "Site")
+    lat <- input$map_marker_click$lat
+    lng <- input$map_marker_click$lng
     
-    filtered <- temp[temp$Site %in% site,]
+    merged_data <- merge(temp, sites, by.y = "Temp_Alias", by.x = "Site")
+    
+    filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,]
     print(filtered)
   })
   
   output$ggplot <- renderPlot({
     #Code for plots
     ggplot(data = ggplot_data(), aes(x = Date, y = Temp)) +
-      geom_point(aes(color = factor(Site)))
+      geom_line()
     #ideally which column has the labels would be from user input
   })
   
