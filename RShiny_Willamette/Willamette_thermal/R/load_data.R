@@ -1,0 +1,6 @@
+load("data/will_exc_data.RData")
+load("data/nsan_mapinfo.RData")
+load("data/ssan_mapinfo.RData")
+load("data/mckz_mapinfo.RData")
+load("data/mfrk_mapinfo.RData")
+load("data/dams.RData")

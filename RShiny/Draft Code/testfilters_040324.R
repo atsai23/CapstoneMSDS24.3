@@ -4,7 +4,6 @@ library(shiny)
 library(ggplot2)
 library(dplyr)
 library(readxl)
-library(dygraph)
 
 # Load data --------------------------------------------------------------------
 
@@ -16,6 +15,7 @@ temp <- temp[!(is.na(temp$Temp)), ]
 
 #Make sure date column is formated as date
 temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
+
 
 readRDS('temptest.rds')
 
@@ -105,7 +105,9 @@ server <- function(input, output, session) {
   
   output$scatterplot <- renderPlot({
     #Code for plots
-    output$scatterplot <- renderDygraph()
+    ggplot(data = selected_data(), aes(x = Date, y = Temp)) +
+      geom_point(aes(color = factor(Site))) +
+      labs(color = 'Site')
     #ideally which column has the labels would be from user input
   })
   
