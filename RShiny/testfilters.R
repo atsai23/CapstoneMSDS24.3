@@ -4,20 +4,20 @@ library(shiny)
 library(ggplot2)
 library(dplyr)
 library(readxl)
-library(dygraph)
+library(dygraphs)
 
 # Load data --------------------------------------------------------------------
 
 #Temperature Data
-temp <- read.csv('data/daily-avg-tmp.csv')
+#temp <- read.csv('data/daily-avg-tmp.csv')
 
 #Drop NaNs
-temp <- temp[!(is.na(temp$Temp)), ]
+#temp <- temp[!(is.na(temp$Temp)), ]
 
-#Make sure date column is formated as date
-temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
+#Make sure date column is formatted as date
+#temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
 
-readRDS('temptest.rds')
+temptest <- readRDS('temptest.rds')
 
 #Get site info
 sites <- read_xlsx('data/Temperature Site Names.xlsx')
@@ -38,24 +38,6 @@ ui <- fluidPage(
     
     sidebarPanel(
       
-      #Select River Kilometer
-      sliderInput(
-        'range',
-        label = 'River KM',
-        min = 0,
-        max = max(measured_sites$RKM),
-        value = c(0, 25)
-      ),
-      
-      #Select Date Range
-      sliderInput(
-        'dateRange',
-        label = 'Date Range',
-        min = min(temp$Date),
-        max = max(temp$Date),
-        value = c(min(temp$Date), as.Date('2015-12-01'))
-      ),
-      
       #Select Section
       selectInput(
         'Section',
@@ -69,44 +51,38 @@ ui <- fluidPage(
         'site',
         label = 'Choose a Site',
         choices = site_names,
-        selected = site_names[0:5],
+        #selected = site_names[0:5],
         multiple = TRUE
       )
       
     ),
     
     #Display graph
-    mainPanel(plotOutput('scatterplot'))
+    mainPanel(dygraphOutput("scatterplot"))
+    
   )
 )
 
 # Define server ----------------------------------------------------------------
 server <- function(input, output, session) {
   
-  #Filter by date
-  selected_dates <- reactive({
-    temp %>% filter(between(temp$Date, input$dateRange[1], input$dateRange[2])) %>%
-      select(Date:Temp)
+  updateSource <- reactive({
+    return(input)
   })
   
-  #Select Sites for RKM
-  selected_sites <- reactive({
-    get_sites <- sites %>% filter(
-      between(sites$RKM, input$range[1], input$range[2])) %>% 
-      select(Temp_Alias)
-    get_sites$Temp_Alias
+  #Make sites reactive to section
+  sitesdropdown <- reactive({
+    sites %>% filter(SECTION == updateSource()$Section) %>% select(Temp_Alias)
   })
   
-  #Filter River Kilometer
-  selected_data <- reactive({
-    selected_dates() %>% filter(Site %in% selected_sites()) %>% select(Date:Temp)
-    
+  observeEvent(input$Section, {
+    updateSelectInput(session, "site", choices = sitesdropdown())
   })
   
-  output$scatterplot <- renderPlot({
-    #Code for plots
-    output$scatterplot <- renderDygraph()
-    #ideally which column has the labels would be from user input
+
+  #Display plot
+  output$scatterplot <- renderDygraph({
+    dygraph(temptest) %>% dyRangeSelector()
   })
   
 }

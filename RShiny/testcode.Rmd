@@ -43,6 +43,11 @@ temp <- read.csv('data/daily-avg-tmp.csv')
 ```
 
 ```{r}
+test <- sites %>% filter(SECTION == 'Estuary') %>% select(Temp_Alias)
+```
+
+
+```{r}
 test <- sites %>% filter(between(sites$RKM, 15, 30)) %>% select(Temp_Alias)
 test2 <- test$Temp_Alias
 #temp2 <- temp %>% filter(Site %in% test$Temp_Alias) %>% select(Date:Temp)

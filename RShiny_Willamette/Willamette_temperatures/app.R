@@ -1,4 +1,4 @@
-# Shiny App to disaply temperature time series for Willamette River basin salmon populations
+# Shiny App to display temperature time series for Willamette River basin salmon populations
 # AH Fullerton, last updated 3/20/24
 
 library(shiny)
