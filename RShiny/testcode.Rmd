@@ -5,14 +5,17 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+### Load Packages
+
 ```{r}
 library(shiny)
 library(readxl)
 library(tidyverse)
 library(DT)
 library (dygraphs)
+library(matrixStats)
 ```
-
+### Load and Transform Data
 ```{r}
 df <- read.csv("mergetemp_test.csv")
 ```
@@ -22,6 +25,31 @@ df <- read.csv("mergetemp_test.csv")
   
 df2 <- mutate(df, Date = as.Date(Date, format= "%Y-%m-%d"))
 ```
+
+```{r}
+sites <- read_xlsx('data/Temperature Site Names.xlsx')
+temp <- read.csv('data/daily-avg-tmp.csv')
+```
+
+```{r}
+temp <- readRDS('data/temptest.rds')
+```
+
+```{r}
+temptest <- readRDS('temptest.rds')
+```
+
+#Date Format
+```{r}
+a = as.Date('2015-12-01')
+b = as.Date('2016-12-01')
+```
+
+```{r}
+temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
+```
+
+### Filtering
 
 ```{r}
 selected_sites <- df %>%
@@ -34,46 +62,75 @@ df %>% filter(ward5 %in% c(0,1))
 ```
 
 ```{r}
-ggplot(data = df, aes(x = Date, y = Temp)) + geom_point(aes(color = factor(ward5)))
-```
-
-```{r}
-sites <- read_xlsx('data/Temperature Site Names.xlsx')
-temp <- read.csv('data/daily-avg-tmp.csv')
+temp <- temp[!(is.na(temp$Temp)), ]
 ```
 
 ```{r}
 test <- sites %>% filter(SECTION == 'Estuary') %>% select(Temp_Alias)
 ```
 
-
 ```{r}
 test <- sites %>% filter(between(sites$RKM, 15, 30)) %>% select(Temp_Alias)
 test2 <- test$Temp_Alias
-#temp2 <- temp %>% filter(Site %in% test$Temp_Alias) %>% select(Date:Temp)
 ```
-
-```{r}
-temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
-```
-
-```{r}
-a = as.Date('2015-12-01')
-b = as.Date('2016-12-01')
-```
-
 
 ```{r}
 temp %>% filter(between(temp$Date, a, b)) %>% select(Date:Temp)
 ```
+
+### Aggregating and Mutation
 
 ```{r}
 temp_small <- temp %>% filter(Site == 'MS03' | Site == 'MS04')
 temp_wide <- temp %>% pivot_wider(names_from = Site, values_from = Temp)
 ```
 
+```{r}
+sites <- c('BO01', 'FP01')
+small <- temp_wide %>% select(all_of(sites), 'Date')
+```
 
 ```{r}
-dygraph(temp_wide) %>% dyRangeSelector()
+bah <- temp %>%
+  rowwise() %>%
+  mutate(test_mean = mean(c_across(where(is.numeric))), na.rm=TRUE)
+```
+
+```{r}
+bahbah <- subset(temp, select = -c(Date))
+```
+
+```{r}
+#temp <- as.data.frame(temp)
+test2 <- temp %>% rowwise(Date) %>% 
+  summarize(mean = rowMeans(pick(where(is.numeric)), na.rm = TRUE), 
+            min = min(pick(where(is.numeric)), na.rm = TRUE),
+            max = max(pick(where(is.numeric)), na.rm = TRUE))
+
+#test <- rowMins(as.matrix(subset(temp, select = -c(Date)), na.rm = TRUE))
+```
+
+```{r}
+data.frame(temp$Date, min = rowMins(as.matrix(subset(temp, select = -c(Date)), na.rm = TRUE)))
+```
+
+
+
+```{r}
+temp_stats <- temp %>% 
+  pivot_longer(!Date, names_to = 'Site', values_to = 'Temp') %>%
+  group_by(Date) %>%
+  summarize(avg = mean(Temp))
+```
+
+
+### Plotting 
+```{r}
+ggplot(data = df, aes(x = Date, y = Temp)) + geom_point(aes(color = factor(ward5)))
+```
+
+
+```{r}
+dygraph(temptest) %>% dyRangeSelector()
 ```
 
