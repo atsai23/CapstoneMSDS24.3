@@ -9,14 +9,14 @@ library(readxl)
 library(dygraphs)
 
 # Load data --------------------------------------------------------------------
-temp <- readRDS('data/temptest.rds')
+#temp <- readRDS('data/temptest.rds')
 
 #Get info for only sites we have measurements for
-measured_sites <- readRDS('data/measured_sites.rds')
+measured_sites <- readRDS('measured_sites.rds')
 
 site_names <- temp$Site
 
-temp_long <- readRDS('data/temp.rds')
+temp <- readRDS('temp.rds')
 
 #temp_long <- temp_long[!(is.na(temp_long$Temp)), ]
 
