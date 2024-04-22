@@ -9,7 +9,7 @@ library(readxl)
 library(dygraphs)
 
 # Load data --------------------------------------------------------------------
-#temp <- readRDS('data/temptest.rds')
+temp <- readRDS('data/temptest.rds')
 
 #Get info for only sites we have measurements for
 measured_sites <- readRDS('measured_sites.rds')
