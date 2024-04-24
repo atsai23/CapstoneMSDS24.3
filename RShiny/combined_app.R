@@ -7,21 +7,13 @@ library(readxl)
 library(leaflet)
 library(RColorBrewer)
 library(bslib)
+library(dygraphs)
 
 # Load data --------------------------------------------------------------------
 
 #Temperature Data
-#temp <- read.csv('data/daily-avg-tmp.csv')
+temp_1 <- read.csv('data/daily-avg-tmp.csv')
 temp <- readRDS('data/temptest.rds')
-
-#Drop NaNs
-#temp <- temp[!(is.na(temp$Temp)),]
-
-#Make sure date column is formated as date
-#temp <- mutate(temp, Date = as.Date(Date, format = "%Y-%m-%d"))
-
-#Get site info
-#sites <- read_xlsx('data/Temperature Site Names.xlsx')
 
 sites <- readRDS('measured_sites.rds')
 
@@ -170,6 +162,26 @@ ui <- fluidPage(
             )
         })
         
+        ggplot_data <- reactive({
+          #site <- input$map_marker_click
+          #print(site)
+          
+          lat <- input$map_marker_click$lat
+          lng <- input$map_marker_click$lng
+          
+          merged_data <- merge(temp, sites, by.y = "Temp_Alias", by.x = "Site")
+          
+          filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,]
+          print(filtered)
+        })
+        
+        output$ggplot <- renderPlot({
+          #Code for plots
+          ggplot(data = ggplot_data(), aes(x = Date, y = Temp)) +
+            geom_line()
+          #ideally which column has the labels would be from user input
+        })
+        
         updateSource <- reactive({
           return(input)
         })
@@ -186,7 +198,7 @@ ui <- fluidPage(
         
         #Filter for selected site
         selected_data <- reactive({
-          temp %>% select('Date', all_of(updateSource()$site))
+          temp_1 %>% select('Date', all_of(updateSource()$site))
         })
         
         stats <- reactive({
