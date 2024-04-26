@@ -95,6 +95,8 @@ plot_filters <- sidebar(
 
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
 
+#test <- merged_data %>% 
+#  pivot_wider(names_from = )
 # Define UI --------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -167,8 +169,10 @@ ui <- fluidPage(
             addPolygons(data = drainage_network,
                         weight = 3,
                         col = 'lightblue') %>%
+            # increase transparency of markers
             clearMarkers() %>% 
             addCircleMarkers(
+              # plot filtered leaflet markers
               data = leaflet_marks(),
               ~ LONG,
               ~ LAT,
@@ -179,6 +183,20 @@ ui <- fluidPage(
             )
         })
         
+        test_dygraph_dat <- reactive({
+          # get lat and long from marker click
+          lat <- input$map_marker_click$lat
+          lng <- input$map_marker_click$lng
+          
+          # look for site with lat and long in site table
+          selected_site <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
+            select(Temp_Alias)
+          
+          print(selected_site)
+          
+          # look for column in temp
+        })
+        
         ggplot_data <- reactive({
           # get lat and long from marker click
           lat <- input$map_marker_click$lat
@@ -186,7 +204,6 @@ ui <- fluidPage(
           
           # filter merged dataset
           filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,]
-          print(filtered)
         })
         
         output$ggplot <- renderPlot({
