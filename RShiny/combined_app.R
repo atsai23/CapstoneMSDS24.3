@@ -20,7 +20,7 @@ temp <- readRDS('temp.rds')
 
 sites <- readRDS('measured_sites.rds')
 
-site_names <- temp$Site
+site_names <- unique(temp_1$Site)
 
 #Get info for only sites we have measurements for
 #measured_sites <- sites %>% filter(Temp_Alias %in% temp$Site)
@@ -121,7 +121,7 @@ ui <- fluidPage(
                          # display the map
                          leafletOutput("map", height = "650px"),
                          # point plot
-                         plotOutput("ggplot", height = "350px", width = '600px')
+                         plotOutput("leaflet_dygraph", height = "350px", width = '600px')
                          ) #End page_sidebar
                        ), #End tab panel
               #Tab for Plots
@@ -145,108 +145,101 @@ ui <- fluidPage(
         )
 )#End fluid page
       
-      # Define server ----------------------------------------------------------------
-      server <- function(input, output, session) {
-        updateSource <- reactive({
-          return(input)
-        })
-        
-        # filter leaflet map
-        leaflet_marks <- reactive({
-          sites %>% 
-            filter(SECTION == updateSource()$Section)
-        })
-        
-        ## leaflet map
-        output$map <- renderLeaflet({
-          leaflet() %>%
-            #Basemap
-            addProviderTiles(providers$OpenStreetMap) %>%
-            setView(lng = -123.5596,
-                    lat = 48.03,
-                    zoom = 10) %>%
-            # add site markers, show site names when clicked
-            addPolygons(data = drainage_network,
-                        weight = 3,
-                        col = 'lightblue') %>%
-            # increase transparency of markers
-            clearMarkers() %>% 
-            addCircleMarkers(
-              # plot filtered leaflet markers
-              data = leaflet_marks(),
-              ~ LONG,
-              ~ LAT,
-              weight = 1,
-              opacity = 10,
-              popup =  ~ Temp_Alias,
-              options = markerOptions(riseOnHover = TRUE)
-            )
-        })
-        
-        test_dygraph_dat <- reactive({
-          # get lat and long from marker click
-          lat <- input$map_marker_click$lat
-          lng <- input$map_marker_click$lng
-          
-          # look for site with lat and long in site table
-          selected_site <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
-            select(Temp_Alias)
-          
-          print(selected_site)
-          
-          # look for column in temp
-        })
-        
-        ggplot_data <- reactive({
-          # get lat and long from marker click
-          lat <- input$map_marker_click$lat
-          lng <- input$map_marker_click$lng
-          
-          # filter merged dataset
-          filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,]
-        })
-        
-        output$ggplot <- renderPlot({
-          #Code for plots
-          ggplot(data = ggplot_data(), aes(x = Date, y = Temp)) +
-            geom_line()
-          #ideally which column has the labels would be from user input
-        })
-        
-        #Make sites reactive to section
-        newSites <- reactive({
-          sites %>%
-            filter(SECTION == updateSource()$Section) %>% select(Temp_Alias)
-        })
-        
-        observeEvent(input$Section, {
-          updateSelectInput(session, "site", choices = newSites())
-        })
-        
-        #Filter for selected site
-        selected_data <- reactive({
-          temp_1 %>% select('Date', all_of(updateSource()$site))
-        })
-        
-        stats <- reactive({
-          selected_data() %>% rowwise(Date) %>%
-            summarize(
-              mean = rowMeans(pick(where(is.numeric)), na.rm = TRUE),
-              min = min(pick(where(is.numeric)), na.rm = TRUE),
-              max = max(pick(where(is.numeric)), na.rm = TRUE)
-            )
-        })
-        
-        #Generate plot
-        output$comboplot <- renderDygraph({
-          dygraph(selected_data()) %>% dyRangeSelector()
-        })
-        
-        output$statplot <- renderDygraph({
-          dygraph(stats()) %>% dyRangeSelector()
-        })
-        
-      }
-      # Create a Shiny app object ----------------------------------------------------
-      
-      shinyApp(ui = ui, server = server)
+# Define server ----------------------------------------------------------------
+server <- function(input, output, session) {
+  updateSource <- reactive({
+    return(input)
+  })
+  
+  updateMapSource <- reactive({
+    
+  })
+  
+  # make leaflet markers reactive to input
+  leaflet_marks <- reactive({
+    #sites %>% 
+    #  filter(SECTION == updateSource()$Section)
+    sites[sites$SECTION %in% updateSource()$Section,]
+  })
+  
+  ## leaflet map
+  output$map <- renderLeaflet({
+    leaflet() %>%
+      #Basemap
+      addProviderTiles(providers$OpenStreetMap) %>%
+      setView(lng = -123.5596,
+              lat = 48.03,
+              zoom = 10) %>%
+      # add site markers, show site names when clicked
+      addPolygons(data = drainage_network,
+                  weight = 3,
+                  col = 'lightblue') %>%
+      # increase transparency of markers
+      clearMarkers() %>% 
+      addCircleMarkers(
+        # plot filtered leaflet markers
+        data = leaflet_marks(),
+        ~ LONG,
+        ~ LAT,
+        weight = 1,
+        opacity = 10,
+        popup =  ~ Temp_Alias,
+        options = markerOptions(riseOnHover = TRUE)
+      )
+  })
+  
+  leaflet_data <- reactive({
+    # get lat and long from marker click
+    lat <- input$map_marker_click$lat
+    lng <- input$map_marker_click$lng
+    
+    # filter merged dataset
+    filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
+      select(c(Date, Site, Temp)) %>% 
+      pivot_wider(names_from = Site, values_from = Temp)
+    
+    print(filtered)
+  })
+  
+  output$leaflet_dygraph <- renderDygraph({
+    dygraph(leaflet_data()) %>% dyRangeSelector()
+  })
+  
+  
+  #Make sites reactive to section
+  newSites <- reactive({
+    sites %>%
+      filter(SECTION == updateSource()$Section) %>% select(Temp_Alias)
+  })
+  
+  observeEvent(input$Section, {
+    updateSelectInput(session, "site", choices = newSites())
+  })
+  
+  #Filter for selected site
+  selected_data <- reactive({
+    temp_1 %>% select('Date', all_of(updateSource()$site))
+  })
+  
+  stats <- reactive({
+    selected_data() %>% rowwise(Date) %>%
+      summarize(
+        mean = rowMeans(pick(where(is.numeric)), na.rm = TRUE),
+        min = min(pick(where(is.numeric)), na.rm = TRUE),
+        max = max(pick(where(is.numeric)), na.rm = TRUE)
+      )
+  })
+  
+  #Generate plot
+  output$comboplot <- renderDygraph({
+    dygraph(selected_data()) %>% dyRangeSelector()
+  })
+  
+  output$statplot <- renderDygraph({
+    dygraph(stats()) %>% dyRangeSelector()
+  })
+  
+}
+# Create a Shiny app object ----------------------------------------------------
+
+shinyApp(ui = ui, server = server)
