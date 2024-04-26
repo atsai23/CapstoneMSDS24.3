@@ -13,7 +13,7 @@ library(dygraphs)
 
 #Temperature Data
 temp_1 <- read.csv('data/daily-avg-tmp.csv')
-temp <- readRDS('data/temptest.rds')
+temp <- readRDS('temp.rds')
 
 sites <- readRDS('measured_sites.rds')
 
@@ -40,11 +40,6 @@ elwha_df <- st_as_sf(elwha_shp)
 drainage_network <- st_read("geo/WBD_Elwha.shp") %>%
   st_transform('+proj=longlat +datum=WGS84')
 
-
-# plot elwha
-elwha_map <- ggplot() +
-  geom_sf(data = elwha_df) +
-  labs(title = "Elwha River")
 
 #UI Elements -------------------------------------------------------------------
 cards <- list(
@@ -91,6 +86,9 @@ plot_filters <- sidebar(
   
 )
 
+merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
+
+
 # Define UI --------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -108,10 +106,10 @@ ui <- fluidPage(
   
   titlePanel("Temperature Time Series by Site"),
   tabsetPanel(tabPanel("Map", 
-                       fluid = TRUE, 
+                       fluid = TRUE,
                        page_sidebar(
                          title = "Map",
-                         sidebar = map_filters,
+                         sidebar = plot_filters,
                          # display the map
                          leafletOutput("map", height = "650px"),
                          # point plot
@@ -141,6 +139,16 @@ ui <- fluidPage(
       
       # Define server ----------------------------------------------------------------
       server <- function(input, output, session) {
+        updateSource <- reactive({
+          return(input)
+        })
+        
+        # filter leaflet map
+        leaflet_marks <- reactive({
+          sites %>% 
+            filter(SECTION == updateSource()$Section)
+        })
+        
         ## leaflet map
         output$map <- renderLeaflet({
           leaflet() %>%
@@ -154,7 +162,7 @@ ui <- fluidPage(
                         weight = 5,
                         col = 'blue') %>%
             addCircleMarkers(
-              data = sites,
+              data = leaflet_marks(),
               ~ LONG,
               ~ LAT,
               popup =  ~ Temp_Alias,
@@ -163,14 +171,11 @@ ui <- fluidPage(
         })
         
         ggplot_data <- reactive({
-          #site <- input$map_marker_click
-          #print(site)
-          
+          # get lat and long from marker click
           lat <- input$map_marker_click$lat
           lng <- input$map_marker_click$lng
           
-          merged_data <- merge(temp, sites, by.y = "Temp_Alias", by.x = "Site")
-          
+          # filter merged dataset
           filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,]
           print(filtered)
         })
@@ -180,10 +185,6 @@ ui <- fluidPage(
           ggplot(data = ggplot_data(), aes(x = Date, y = Temp)) +
             geom_line()
           #ideally which column has the labels would be from user input
-        })
-        
-        updateSource <- reactive({
-          return(input)
         })
         
         #Make sites reactive to section
