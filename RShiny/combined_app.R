@@ -13,6 +13,9 @@ library(dygraphs)
 
 #Temperature Data
 temp_1 <- read.csv('data/daily-avg-tmp.csv')
+
+temp_1$Date <- as.Date(temp_1$Date)
+
 temp <- readRDS('temp.rds')
 
 sites <- readRDS('measured_sites.rds')
@@ -58,10 +61,14 @@ cards <- list(
 
 #Code for map sidebar
 map_filters <- sidebar(
-  selectInput("Site", 
-              label = "Select Site", 
-              choices = unique(sites$Temp_Alias), 
-              selected = "ES01")
+  #Select Section
+  selectInput(
+    'Section',
+    label = 'Section',
+    choices = unique(sites$SECTION),
+    selected = unique(sites$SECTION)[1],
+    multiple = TRUE
+  )
 )
 
 #Code for plots sidebar
@@ -88,7 +95,6 @@ plot_filters <- sidebar(
 
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
 
-
 # Define UI --------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -109,7 +115,7 @@ ui <- fluidPage(
                        fluid = TRUE,
                        page_sidebar(
                          title = "Map",
-                         sidebar = plot_filters,
+                         sidebar = map_filters,
                          # display the map
                          leafletOutput("map", height = "650px"),
                          # point plot
@@ -159,12 +165,15 @@ ui <- fluidPage(
                     zoom = 10) %>%
             # add site markers, show site names when clicked
             addPolygons(data = drainage_network,
-                        weight = 5,
-                        col = 'blue') %>%
+                        weight = 3,
+                        col = 'lightblue') %>%
+            clearMarkers() %>% 
             addCircleMarkers(
               data = leaflet_marks(),
               ~ LONG,
               ~ LAT,
+              weight = 1,
+              opacity = 10,
               popup =  ~ Temp_Alias,
               options = markerOptions(riseOnHover = TRUE)
             )
