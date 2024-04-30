@@ -132,10 +132,8 @@ ui <- fluidPage(
                          title = "Map",
                          sidebar = map_filters,
                          # display the map
-                         #leafletOutput("map", height = "650px"),
-                         # point plot
-                         #dygraphOutput("leaflet_dygraph", height = "350px", width = '800px')
                          map_cards[[1]],
+                         # time series
                          map_cards[[2]]
                          ) #End page_sidebar
                        ), #End tab panel
@@ -168,8 +166,6 @@ server <- function(input, output, session) {
   
   # make leaflet markers reactive to input
   leaflet_marks <- reactive({
-    #sites %>% 
-    #  filter(SECTION == updateSource()$Section)
     sites[sites$SECTION %in% updateSource()$Section,]
   })
   
@@ -200,6 +196,11 @@ server <- function(input, output, session) {
   })
   
   leaflet_data <- reactive({
+    # make sure data is not empty
+    validate(
+      need(input$map_marker_click$lat != "", "Please select a site from the map")
+    )
+    
     # get lat and long from marker click
     lat <- input$map_marker_click$lat
     lng <- input$map_marker_click$lng
@@ -208,8 +209,6 @@ server <- function(input, output, session) {
     filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
       select(c(Date, Site, Temp)) %>% 
       pivot_wider(names_from = Site, values_from = Temp)
-    
-    print(filtered)
   })
   
   output$leaflet_dygraph <- renderDygraph({
