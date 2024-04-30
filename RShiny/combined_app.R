@@ -195,7 +195,7 @@ server <- function(input, output, session) {
         popup =  ~ Temp_Alias,
         options = markerOptions(riseOnHover = TRUE)
       ) %>% 
-      addMiniMap()
+      addMiniMap(toggleDisplay = TRUE)
   })
   
   leaflet_data <- reactive({
@@ -218,7 +218,6 @@ server <- function(input, output, session) {
     dygraph(leaflet_data()) %>% dyRangeSelector()
   })
   
-  
   #Make sites reactive to section
   newSites <- reactive({
     sites %>%
@@ -231,7 +230,7 @@ server <- function(input, output, session) {
   
   #Filter for selected site
   selected_data <- reactive({
-    temp_1 %>% select('Date', all_of(updateSource()$site))
+    temp %>% select('Date', all_of(updateSource()$site))
   })
   
   stats <- reactive({
