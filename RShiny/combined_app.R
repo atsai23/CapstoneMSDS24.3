@@ -58,6 +58,19 @@ cards <- list(
   )
 )
 
+map_cards <- list(
+  card(
+    full_screen = TRUE,
+    card_header("Map"),
+    leafletOutput("map")
+  ),
+  card(
+    full_screen = TRUE,
+    card_header("Site Time Series"),
+    dygraphOutput("leaflet_dygraph")
+  )
+)
+
 
 #Code for map sidebar
 map_filters <- sidebar(
@@ -119,9 +132,11 @@ ui <- fluidPage(
                          title = "Map",
                          sidebar = map_filters,
                          # display the map
-                         leafletOutput("map", height = "650px"),
+                         #leafletOutput("map", height = "650px"),
                          # point plot
-                         dygraphOutput("leaflet_dygraph", height = "350px", width = '800px')
+                         #dygraphOutput("leaflet_dygraph", height = "350px", width = '800px')
+                         map_cards[[1]],
+                         map_cards[[2]]
                          ) #End page_sidebar
                        ), #End tab panel
               #Tab for Plots
