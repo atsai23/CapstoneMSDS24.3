@@ -121,7 +121,7 @@ ui <- fluidPage(
                          # display the map
                          leafletOutput("map", height = "650px"),
                          # point plot
-                         plotOutput("leaflet_dygraph", height = "350px", width = '600px')
+                         dygraphOutput("leaflet_dygraph", height = "350px", width = '800px')
                          ) #End page_sidebar
                        ), #End tab panel
               #Tab for Plots
@@ -149,10 +149,6 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   updateSource <- reactive({
     return(input)
-  })
-  
-  updateMapSource <- reactive({
-    
   })
   
   # make leaflet markers reactive to input
