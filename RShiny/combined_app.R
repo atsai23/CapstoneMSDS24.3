@@ -8,6 +8,8 @@ library(leaflet)
 library(RColorBrewer)
 library(bslib)
 library(dygraphs)
+#install.packages("leafem")
+library(leafem)
 
 # Load data --------------------------------------------------------------------
 
@@ -192,7 +194,8 @@ server <- function(input, output, session) {
         opacity = 10,
         popup =  ~ Temp_Alias,
         options = markerOptions(riseOnHover = TRUE)
-      )
+      ) %>% 
+      addMiniMap()
   })
   
   leaflet_data <- reactive({
