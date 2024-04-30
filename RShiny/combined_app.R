@@ -78,7 +78,7 @@ map_cards <- list(
 map_filters <- sidebar(
   #Select Section
   selectInput(
-    'Section',
+    'MapSection',
     label = 'Section',
     choices = unique(sites$SECTION),
     selected = unique(sites$SECTION)[1],
@@ -166,9 +166,13 @@ server <- function(input, output, session) {
     return(input)
   })
   
+  updateMapSource <- reactive({
+    return(input)
+  })
+  
   # make leaflet markers reactive to input
   leaflet_marks <- reactive({
-    sites[sites$SECTION %in% updateSource()$Section,]
+    sites[sites$SECTION %in% updateMapSource()$MapSection,]
   })
   
   ## leaflet map
