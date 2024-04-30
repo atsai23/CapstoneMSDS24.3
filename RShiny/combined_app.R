@@ -23,10 +23,10 @@ sites <- readRDS('measured_sites.rds')
 site_names <- unique(temp_1$Site)
 
 #Get info for only sites we have measurements for
-#measured_sites <- sites %>% filter(Temp_Alias %in% temp$Site)
+measured_sites <- sites %>% filter(Temp_Alias %in% temp$Site)
 
 #Get list of site names
-#site_names <- sort(unique(temp$Site))
+site_names <- sort(unique(temp$Site))
 #hard coded- might want to have some flexibility for the name of the label column?
 
 # load shapefile
