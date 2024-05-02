@@ -8,8 +8,6 @@ library(leaflet)
 library(RColorBrewer)
 library(bslib)
 library(dygraphs)
-#install.packages("leafem")
-library(leafem)
 
 # Load data --------------------------------------------------------------------
 
