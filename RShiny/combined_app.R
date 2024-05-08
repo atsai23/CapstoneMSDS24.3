@@ -61,7 +61,7 @@ cards <- list(
 map_cards <- list(
   card(
     full_screen = TRUE,
-    card_header("Map"),
+    card_header("Please Select a Site"),
     leafletOutput("map")
   ),
   card(
@@ -97,7 +97,7 @@ plot_filters <- sidebar(
   
   #Select a site
   selectInput(
-    'site',
+    'Site',
     label = 'Choose a Site',
     choices = site_names,
     selected = site_names[0:5],
@@ -108,8 +108,7 @@ plot_filters <- sidebar(
 
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
 
-#test <- merged_data %>% 
-#  pivot_wider(names_from = )
+
 # Define UI --------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -129,7 +128,7 @@ ui <- fluidPage(
   tabsetPanel(tabPanel("Map", 
                        fluid = TRUE,
                        page_sidebar(
-                         title = "Map",
+                         title = "Map of Sites where Data Was Measured. Please Select the Site You Would Like to See Data For",
                          sidebar = map_filters,
                          # display the map
                          map_cards[[1]],
@@ -138,7 +137,7 @@ ui <- fluidPage(
                          ) #End page_sidebar
                        ), #End tab panel
               #Tab for Plots
-              tabPanel("Plot",
+              tabPanel("Time Series",
                        fluid = TRUE,
                        page_sidebar(
                          title = "Temperature",
@@ -227,12 +226,17 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$Section, {
-    updateSelectInput(session, "site", choices = newSites())
+    updateSelectInput(session, "Site", choices = newSites())
   })
   
   #Filter for selected site
   selected_data <- reactive({
-    temp %>% select('Date', all_of(updateSource()$site))
+    
+    validate(
+      need(input$Site != "", "Please select a site from the sidebar")
+    )
+    
+    temp %>% select('Date', all_of(updateSource()$Site))
   })
   
   stats <- reactive({
