@@ -106,15 +106,15 @@ plot_filters <- sidebar(
   
 )
 
+# Merge temperature and site information
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
 
 
 # Define UI --------------------------------------------------------------------
-
 ui <- fluidPage(
   tags$head(
     tags$script(
-      # adjust size of map based on window size
+      # Adjust size of map based on window size
       '
       $(window).on("resize", function() {
         var map = $("#map);
@@ -123,7 +123,7 @@ ui <- fluidPage(
       '
     )
   ),
-  
+  # Add titlePanel
   titlePanel("Temperature Time Series by Site"),
   tabsetPanel(tabPanel("Map", 
                        fluid = TRUE,
@@ -159,20 +159,22 @@ ui <- fluidPage(
       
 # Define server ----------------------------------------------------------------
 server <- function(input, output, session) {
+  # Reactive function to update the input source for plots
   updateSource <- reactive({
     return(input)
   })
   
+  # Reactive function to update the input source for map plots
   updateMapSource <- reactive({
     return(input)
   })
   
-  # make leaflet markers reactive to input
+  # Make leaflet markers reactive to input selecting the Section (Habitat)
   leaflet_marks <- reactive({
     sites[sites$SECTION %in% updateMapSource()$MapSection,]
   })
   
-  ## leaflet map
+  # leaflet map
   output$map <- renderLeaflet({
     leaflet() %>%
       #Basemap
@@ -196,25 +198,26 @@ server <- function(input, output, session) {
         popup =  ~ Temp_Alias,
         options = markerOptions(riseOnHover = TRUE)
       ) %>% 
+      # add minimap for context
       addMiniMap(toggleDisplay = TRUE)
   })
   
   leaflet_data <- reactive({
-    # make sure data is not empty
+    # Ensure the data is not empty and avoid error message
     validate(
       need(input$map_marker_click$lat != "", "Please select a site from the map")
     )
     
-    # get lat and long from marker click
+    # Get lat and long from marker click
     lat <- input$map_marker_click$lat
     lng <- input$map_marker_click$lng
     
-    # filter merged dataset
+    # Filter previously merged dataset
     filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
       select(c(Date, Site, Temp)) %>% 
       pivot_wider(names_from = Site, values_from = Temp)
   })
-  
+  # Create dygraph output based on selected site
   output$leaflet_dygraph <- renderDygraph({
     dygraph(leaflet_data()) %>% dyRangeSelector()
   })
