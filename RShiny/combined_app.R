@@ -17,6 +17,7 @@ temp_1 <- read.csv('data/daily-avg-tmp.csv')
 temp_1$Date <- as.Date(temp_1$Date)
 
 temp <- readRDS('temp.rds')
+temp_interp <- readRDS('temp_interp.rds')
 
 sites <- readRDS('measured_sites.rds')
 
@@ -81,6 +82,11 @@ map_filters <- sidebar(
     choices = unique(sites$SECTION),
     selected = unique(sites$SECTION)[1],
     multiple = TRUE
+  ),
+  checkboxInput(
+    'Interpolation',
+    label = 'Show interpolated data',
+    value = FALSE
   )
 )
 
@@ -108,6 +114,7 @@ plot_filters <- sidebar(
 
 # Merge temperature and site information
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
+merged_interp <- merge(temp_interp, sites, by.y = "Temp_Alias", by.x = "Site")
 
 
 # Define UI --------------------------------------------------------------------
@@ -205,7 +212,7 @@ server <- function(input, output, session) {
   leaflet_data <- reactive({
     # Ensure the data is not empty and avoid error message
     validate(
-      need(input$map_marker_click$lat != "", "Please select a site from the map")
+      need(input$map_marker_click$lat != "", "Please select a site from the map to get started.")
     )
     
     # Get lat and long from marker click
@@ -217,9 +224,35 @@ server <- function(input, output, session) {
       select(c(Date, Site, Temp)) %>% 
       pivot_wider(names_from = Site, values_from = Temp)
   })
+  
+  leaflet_interp <- reactive({
+    # Get lat and long from marker click
+    lat <- input$map_marker_click$lat
+    lng <- input$map_marker_click$lng
+    
+    # Filter previously merged dataset
+    filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>% 
+      select(c(Date, Site, Temp)) %>% 
+      pivot_wider(names_from = Site, values_from = Temp)
+  })
+  
   # Create dygraph output based on selected site
   output$leaflet_dygraph <- renderDygraph({
     dygraph(leaflet_data()) %>% dyRangeSelector()
+  })
+  
+  # Observe if the checkbox is clicked
+  observeEvent(input$Interpolation, {
+    if (input$Interpolation) {
+      output$leaflet_dygraph <- renderDygraph({
+        dygraph(leaflet_interp()) %>% 
+          #dySeries(leaflet_interp()) %>% 
+          dyRangeSelector()
+      })} else {
+        output$leaflet_dygraph <- renderDygraph({
+          dygraph(leaflet_data()) %>% dyRangeSelector()
+        })
+      }
   })
   
   #Make sites reactive to section
