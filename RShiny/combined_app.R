@@ -209,6 +209,7 @@ server <- function(input, output, session) {
       addMiniMap(toggleDisplay = TRUE)
   })
   
+  # Create reactive object for leaflet data
   leaflet_data <- reactive({
     # Ensure the data is not empty and avoid error message
     validate(
@@ -225,6 +226,7 @@ server <- function(input, output, session) {
       pivot_wider(names_from = Site, values_from = Temp)
   })
   
+  # create reactive object for interpolated data
   leaflet_interp <- reactive({
     # Get lat and long from marker click
     lat <- input$map_marker_click$lat
@@ -238,7 +240,9 @@ server <- function(input, output, session) {
   
   # Create dygraph output based on selected site
   output$leaflet_dygraph <- renderDygraph({
-    dygraph(leaflet_data()) %>% dyRangeSelector()
+    dygraph(leaflet_data()) %>% 
+      dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+      dyRangeSelector()
   })
   
   # Observe if the checkbox is clicked
@@ -246,11 +250,14 @@ server <- function(input, output, session) {
     if (input$Interpolation) {
       output$leaflet_dygraph <- renderDygraph({
         dygraph(leaflet_interp()) %>% 
-          #dySeries(leaflet_interp()) %>% 
+          #dySeries(leaflet_data(), color = "red") %>%
+          dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
           dyRangeSelector()
       })} else {
         output$leaflet_dygraph <- renderDygraph({
-          dygraph(leaflet_data()) %>% dyRangeSelector()
+          dygraph(leaflet_data()) %>% 
+            dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+            dyRangeSelector()
         })
       }
   })
