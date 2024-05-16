@@ -116,7 +116,6 @@ plot_filters <- sidebar(
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
 merged_interp <- merge(temp_interp, sites, by.y = "Temp_Alias", by.x = "Site")
 
-
 # Define UI --------------------------------------------------------------------
 ui <- fluidPage(
   tags$head(
@@ -215,52 +214,74 @@ server <- function(input, output, session) {
     validate(
       need(input$map_marker_click$lat != "", "Please select a site from the map to get started.")
     )
-    
+
     # Get lat and long from marker click
     lat <- input$map_marker_click$lat
     lng <- input$map_marker_click$lng
+    #clicked_site <- merged_interp$Site[which.min((
+    #  merged_interp$LAT - lat)^2 + (merged_interp$LONG - lng)^2)]
+    #selected_site <- merged_interp[merged_interp$Site == clicked_site,]
     
+    #if (!input$Interpolation) {
+    #  selected_site <- selected_site[!selected_site$interpolation_status]
+    #}
+
     # Filter previously merged dataset
-    filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
-      select(c(Date, Site, Temp)) %>% 
-      pivot_wider(names_from = Site, values_from = Temp)
+    filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>%
+      select(c(Date, Site, Temp, interp_temps)) #%>% 
+      #pivot_wider(names_from = Site, values_from = Temp)
   })
   
   # create reactive object for interpolated data
-  leaflet_interp <- reactive({
-    # Get lat and long from marker click
-    lat <- input$map_marker_click$lat
-    lng <- input$map_marker_click$lng
-    
-    # Filter previously merged dataset
-    filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>% 
-      select(c(Date, Site, Temp)) %>% 
-      pivot_wider(names_from = Site, values_from = Temp)
-  })
+  # leaflet_interp <- reactive({
+  #   # Get lat and long from marker click
+  #   lat <- input$map_marker_click$lat
+  #   lng <- input$map_marker_click$lng
+  #   
+  #   # Filter previously merged dataset
+  #   filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>% 
+  #     select(c(Date, Site, Temp)) %>% 
+  #     pivot_wider(names_from = Site, values_from = Temp)
+  # })
   
   # Create dygraph output based on selected site
+  # output$leaflet_dygraph <- renderDygraph({
+  #   dygraph(leaflet_data()) %>% 
+  #     dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+  #     dyRangeSelector()
+  # })
+  
   output$leaflet_dygraph <- renderDygraph({
-    dygraph(leaflet_data()) %>% 
-      dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+    #plotting_data <- leaflet_data()
+    #print(plotting_data)
+    #print(dim(plotting_data))
+    
+    #color <- ifelse(leaflet_data()$interpolation_status, "#FF5733", "#3182bd")
+    #print(dim(color))
+    
+    dygraph(leaflet_data(), x = "Date") %>% 
+      dySeries("Temp", label = "Temperature", color = "#3182bd") %>% 
+      dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733") %>% 
       dyRangeSelector()
   })
   
+  
   # Observe if the checkbox is clicked
-  observeEvent(input$Interpolation, {
-    if (input$Interpolation) {
-      output$leaflet_dygraph <- renderDygraph({
-        dygraph(leaflet_interp()) %>% 
-          #dySeries(leaflet_data(), color = "red") %>%
-          dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
-          dyRangeSelector()
-      })} else {
-        output$leaflet_dygraph <- renderDygraph({
-          dygraph(leaflet_data()) %>% 
-            dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
-            dyRangeSelector()
-        })
-      }
-  })
+  # observeEvent(input$Interpolation, {
+  #   if (input$Interpolation) {
+  #     output$leaflet_dygraph <- renderDygraph({
+  #       dygraph(leaflet_interp()) %>% 
+  #         #dySeries(leaflet_data(), color = "red") %>%
+  #         dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+  #         dyRangeSelector()
+  #     })} else {
+  #       output$leaflet_dygraph <- renderDygraph({
+  #         dygraph(leaflet_data()) %>% 
+  #           dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+  #           dyRangeSelector()
+  #       })
+  #     }
+  # })
   
   #Make sites reactive to section
   newSites <- reactive({

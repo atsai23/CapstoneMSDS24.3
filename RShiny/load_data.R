@@ -22,6 +22,12 @@ temp_interp <- mutate(temp_interp, Date = as.Date(Date, format = "%Y-%m-%d"))
 #Pivot wider
 temp_wide <- temp %>% pivot_wider(values_from = Temp, names_from = Site)
 
+# Put interpolated temps in another column
+temp_interp$interp_temps <- ifelse(temp_interp$interpolation_status,
+                                      temp_interp$Temp, NA)
+
+temp_interp$Temp <- ifelse(temp_interp$interpolation_status, NA, temp_interp$Temp)
+
 saveRDS(temp_wide, 'temp.rds')
 saveRDS(temp_interp, 'temp_interp.rds')
 
