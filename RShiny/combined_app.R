@@ -228,8 +228,7 @@ server <- function(input, output, session) {
 
     # Filter previously merged dataset
     filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>%
-      select(c(Date, Site, Temp, interp_temps)) #%>% 
-      #pivot_wider(names_from = Site, values_from = Temp)
+      select(c(Date, Site, Temp, interp_temps))
   })
   
   # create reactive object for interpolated data
@@ -252,36 +251,24 @@ server <- function(input, output, session) {
   # })
   
   output$leaflet_dygraph <- renderDygraph({
-    #plotting_data <- leaflet_data()
-    #print(plotting_data)
-    #print(dim(plotting_data))
+    plotting_data <- leaflet_data()
     
-    #color <- ifelse(leaflet_data()$interpolation_status, "#FF5733", "#3182bd")
-    #print(dim(color))
+    if (!input$Interpolation) {
+      plotting_data <- plotting_data[is.na(plotting_data$interp_temps),]
+    }
     
-    dygraph(leaflet_data(), x = "Date") %>% 
+    dy <- dygraph(plotting_data, x = "Date") %>% 
       dySeries("Temp", label = "Temperature", color = "#3182bd") %>% 
-      dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733") %>% 
+      #dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733") %>% 
       dyRangeSelector()
+    
+    if (input$Interpolation) {
+      dy <- dy %>% 
+        dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733")
+    }
+    
+    return(dy)
   })
-  
-  
-  # Observe if the checkbox is clicked
-  # observeEvent(input$Interpolation, {
-  #   if (input$Interpolation) {
-  #     output$leaflet_dygraph <- renderDygraph({
-  #       dygraph(leaflet_interp()) %>% 
-  #         #dySeries(leaflet_data(), color = "red") %>%
-  #         dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
-  #         dyRangeSelector()
-  #     })} else {
-  #       output$leaflet_dygraph <- renderDygraph({
-  #         dygraph(leaflet_data()) %>% 
-  #           dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
-  #           dyRangeSelector()
-  #       })
-  #     }
-  # })
   
   #Make sites reactive to section
   newSites <- reactive({
