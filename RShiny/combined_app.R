@@ -259,6 +259,9 @@ server <- function(input, output, session) {
     
     dy <- dygraph(plotting_data, x = "Date") %>% 
       dySeries("Temp", label = "Temperature", color = "#3182bd") %>% 
+      # trying to disconnect the separated points...
+      dyOptions(connectSeparatedPoints = NA) %>% 
+      dyAxis("y", label = "Temperature (C)") %>% 
       #dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733") %>% 
       dyRangeSelector()
     
