@@ -17,6 +17,7 @@ temp_1 <- read.csv('data/daily-avg-tmp.csv')
 temp_1$Date <- as.Date(temp_1$Date)
 
 temp <- readRDS('temp.rds')
+temp_interp <- readRDS('temp_interp.rds')
 
 sites <- readRDS('measured_sites.rds')
 
@@ -81,6 +82,11 @@ map_filters <- sidebar(
     choices = unique(sites$SECTION),
     selected = unique(sites$SECTION)[1],
     multiple = TRUE
+  ),
+  checkboxInput(
+    'Interpolation',
+    label = 'Show interpolated data',
+    value = FALSE
   )
 )
 
@@ -108,7 +114,7 @@ plot_filters <- sidebar(
 
 # Merge temperature and site information
 merged_data <- merge(temp_1, sites, by.y = "Temp_Alias", by.x = "Site")
-
+merged_interp <- merge(temp_interp, sites, by.y = "Temp_Alias", by.x = "Site")
 
 # Define UI --------------------------------------------------------------------
 ui <- fluidPage(
@@ -202,24 +208,69 @@ server <- function(input, output, session) {
       addMiniMap(toggleDisplay = TRUE)
   })
   
+  # Create reactive object for leaflet data
   leaflet_data <- reactive({
     # Ensure the data is not empty and avoid error message
     validate(
-      need(input$map_marker_click$lat != "", "Please select a site from the map")
+      need(input$map_marker_click$lat != "", "Please select a site from the map to get started.")
     )
-    
+
     # Get lat and long from marker click
     lat <- input$map_marker_click$lat
     lng <- input$map_marker_click$lng
+    #clicked_site <- merged_interp$Site[which.min((
+    #  merged_interp$LAT - lat)^2 + (merged_interp$LONG - lng)^2)]
+    #selected_site <- merged_interp[merged_interp$Site == clicked_site,]
     
+    #if (!input$Interpolation) {
+    #  selected_site <- selected_site[!selected_site$interpolation_status]
+    #}
+
     # Filter previously merged dataset
-    filtered <- merged_data[merged_data$LAT %in% lat & merged_data$LONG %in% lng,] %>% 
-      select(c(Date, Site, Temp)) %>% 
-      pivot_wider(names_from = Site, values_from = Temp)
+    filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>%
+      select(c(Date, Site, Temp, interp_temps))
   })
+  
+  # create reactive object for interpolated data
+  # leaflet_interp <- reactive({
+  #   # Get lat and long from marker click
+  #   lat <- input$map_marker_click$lat
+  #   lng <- input$map_marker_click$lng
+  #   
+  #   # Filter previously merged dataset
+  #   filtered <- merged_interp[merged_interp$LAT %in% lat & merged_interp$LONG %in% lng,] %>% 
+  #     select(c(Date, Site, Temp)) %>% 
+  #     pivot_wider(names_from = Site, values_from = Temp)
+  # })
+  
   # Create dygraph output based on selected site
+  # output$leaflet_dygraph <- renderDygraph({
+  #   dygraph(leaflet_data()) %>% 
+  #     dyHighlight(highlightSeriesBackgroundAlpha = 0.4) %>% 
+  #     dyRangeSelector()
+  # })
+  
   output$leaflet_dygraph <- renderDygraph({
-    dygraph(leaflet_data()) %>% dyRangeSelector()
+    plotting_data <- leaflet_data()
+    
+    if (!input$Interpolation) {
+      plotting_data <- plotting_data[is.na(plotting_data$interp_temps),]
+    }
+    
+    dy <- dygraph(plotting_data, x = "Date") %>% 
+      dySeries("Temp", label = "Temperature", color = "#3182bd") %>% 
+      # trying to disconnect the separated points...
+      dyOptions(connectSeparatedPoints = NA) %>% 
+      dyAxis("y", label = "Temperature (C)") %>% 
+      #dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733") %>% 
+      dyRangeSelector()
+    
+    if (input$Interpolation) {
+      dy <- dy %>% 
+        dySeries("interp_temps", label = "Interpolated Temperature", color = "#FF5733")
+    }
+    
+    return(dy)
   })
   
   #Make sites reactive to section
